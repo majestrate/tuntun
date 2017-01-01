@@ -14,10 +14,13 @@ type Admin struct {
 	Password string `json:"password"`
 }
 
-func GetAdmin() (a *Admin, err error) {
+func DefaultAdminFile() string {
 	h := os.Getenv("HOME")
-	fpath := filepath.Join(h, ".cjdnsadmin")
-	return GetAdminFromFile(fpath)
+	return filepath.Join(h, ".cjdnsadmin")
+}
+
+func GetAdmin() (a *Admin, err error) {
+	return GetAdminFromFile(DefaultAdminFile())
 }
 
 func GetAdminFromFile(path string) (a *Admin, err error) {

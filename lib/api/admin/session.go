@@ -1,11 +1,13 @@
 package admin
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"github.com/majestrate/tuntun/lib/util"
 	"github.com/zeebo/bencode"
+	"io"
 	"log"
 	"net"
 )
@@ -143,6 +145,39 @@ func (s *Session) Authed(obj map[string]interface{}) (response map[string]interf
 	obj, err = s.buildReq(s.p, obj)
 	if err == nil {
 		response, err = s.Command(obj)
+	}
+	return
+}
+
+func (s *Session) AddTunnelIfNotThere(pubkey string) (info *IPTunnel, err error) {
+	var infos []*IPTunnel
+	var addrs map[string]*IPTunnel
+	infos, err = s.ListIPTunnels()
+	if err == nil {
+		for idx, _ := range infos {
+			if infos[idx].Pubkey == pubkey {
+				info = infos[idx]
+			}
+			addrs[infos[idx].Address] = infos[idx]
+		}
+		if info == nil {
+			// add it it's not there
+			for {
+				// make unique address
+				var n [3]byte
+				io.ReadFull(rand.Reader, n[:])
+				a := net.IPv4(10, n[0], n[1], n[2]).String()
+				_, ok := addrs[a]
+				if !ok {
+					info = &IPTunnel{
+						Address: a,
+						Pubkey:  pubkey,
+					}
+					err = s.AddIPTunnel(info)
+					break
+				}
+			}
+		}
 	}
 	return
 }
