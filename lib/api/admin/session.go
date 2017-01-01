@@ -8,7 +8,6 @@ import (
 	"github.com/majestrate/tuntun/lib/util"
 	"github.com/zeebo/bencode"
 	"io"
-	"log"
 	"net"
 )
 
@@ -151,14 +150,17 @@ func (s *Session) Authed(obj map[string]interface{}) (response map[string]interf
 
 func (s *Session) AddTunnelIfNotThere(pubkey string) (info *IPTunnel, err error) {
 	var infos []*IPTunnel
-	var addrs map[string]*IPTunnel
+	addrs := make(map[string]*IPTunnel)
 	infos, err = s.ListIPTunnels()
 	if err == nil {
 		for idx, _ := range infos {
 			if infos[idx].Pubkey == pubkey {
 				info = infos[idx]
 			}
-			addrs[infos[idx].Address] = infos[idx]
+			a := infos[idx].Address
+			if a != "" {
+				addrs[a] = infos[idx]
+			}
 		}
 		if info == nil {
 			// add it it's not there
@@ -244,7 +246,6 @@ func (s *Session) RemoveIPTunnelsByPubkey(key string) (err error) {
 	if err == nil {
 		var conns []interface{}
 		c, ok := r["connections"]
-		log.Println(c)
 		if !ok {
 			err = errors.New("no connections in response")
 			return
@@ -272,7 +273,6 @@ func (s *Session) ListIPTunnels() (tunnels []*IPTunnel, err error) {
 	if err == nil {
 		var conns []interface{}
 		c, ok := r["connections"]
-		log.Println(c)
 		if !ok {
 			err = errors.New("no connections in response")
 			return

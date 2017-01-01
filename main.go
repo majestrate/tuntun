@@ -50,9 +50,10 @@ func main() {
 			pubaddr := api.KeyToAddr(pubkey)
 			if pubaddr == nil {
 				w.WriteHeader(400)
-				io.WriteString(w, "bad pubkey")
+				io.WriteString(w, "bad pubkey, "+pubkey)
 				return
 			}
+			log.Println(pubaddr.String())
 			addr, _, _ := net.SplitHostPort(r.RemoteAddr)
 			naddr := net.ParseIP(addr)
 			if naddr.Equal(pubaddr) {
