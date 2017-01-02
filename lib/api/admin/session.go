@@ -290,3 +290,18 @@ func (s *Session) ListIPTunnels() (tunnels []*IPTunnel, err error) {
 	}
 	return
 }
+
+func (s *Session) GetOurPubkey() (key string, err error) {
+	var r map[string]interface{}
+	r, err = s.Authed(map[string]interface{}{
+		"q": "NodeStore_nodeForAddr",
+		"args": map[string]interface{}{
+			"ip": 0,
+		},
+	})
+	if err == nil {
+		res := r["result"].(map[string]interface{})
+		key = res["key"].(string)
+	}
+	return
+}

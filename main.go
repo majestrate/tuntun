@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/majestrate/tuntun/lib/api"
 	"github.com/majestrate/tuntun/lib/api/admin"
@@ -10,39 +9,24 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"strings"
 )
-
-func findFC00Addr() (laddr net.Addr, err error) {
-	var ifs []net.Interface
-	ifs, err = net.Interfaces()
-	if err == nil {
-		for _, netif := range ifs {
-			var addrs []net.Addr
-			addrs, err = netif.Addrs()
-			if err == nil {
-				for _, addr := range addrs {
-					if strings.HasPrefix(addr.String(), "fc") {
-						laddr = addr
-						return
-					}
-				}
-			}
-		}
-	}
-	if err == nil {
-		err = errors.New("cannot find fc00 address")
-	}
-	return
-}
 
 func main() {
 	port := 1880
 	adminfile := admin.DefaultAdminFile()
-	laddr, e := findFC00Addr()
+	a, e := admin.GetAdminFromFile(adminfile)
+	if e != nil {
+		log.Fatal(e)
+	}
+	s, e := a.Session()
+	if e != nil {
+		log.Fatal(e)
+	}
+	pk, e := s.GetOurPubkey()
+	ip := api.KeyToAddr(pk)
+	s.Close()
 	if e == nil {
-		addr := strings.Split(laddr.String(), "/")[0]
-		addr = fmt.Sprintf("[%s]:%d", addr, port)
+		addr := fmt.Sprintf("[%s]:%d", ip.String(), port)
 		log.Printf("serving on http://%s/", addr)
 
 		handleNewRequest := func(w http.ResponseWriter, r *http.Request) {
@@ -64,6 +48,7 @@ func main() {
 						defer s.Close()
 						info, err := s.AddTunnelIfNotThere(pubkey)
 						if err == nil {
+							info.Pubkey = pk
 							json.NewEncoder(w).Encode(info)
 							return
 						}
