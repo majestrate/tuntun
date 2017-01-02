@@ -10,6 +10,10 @@ build server and run it at http://[your:mesh:net:ip]:port/
     
 uses `10.0.0.0/8` for addresses
     
+    # echo 1 > /proc/sys/net/ipv4/ip_forward
+    # iptables -t nat -A POSTROUTING -s 10.0.0.0/8 -o eth0 -j MASQUERADE
+    # ip route add 10.0.0.0/8 dev tun0
+
 
 ## client setup
 
