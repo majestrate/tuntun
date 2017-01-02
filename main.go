@@ -9,10 +9,19 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
+	"strconv"
 )
 
 func main() {
 	port := 1880
+	if len(os.Args) > 1 {
+		p, e := strconv.Atoi(os.Args[1])
+		if e != nil {
+			log.Fatal(e)
+		}
+		port = p
+	}
 	adminfile := admin.DefaultAdminFile()
 	a, e := admin.GetAdminFromFile(adminfile)
 	if e != nil {
