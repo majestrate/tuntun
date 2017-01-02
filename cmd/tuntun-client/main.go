@@ -28,6 +28,11 @@ func main() {
 	}
 	defer s.Close()
 	log.Println("Trying to get address...")
+	pk, err := s.GetOurPubkey()
+	if err != nil {
+		log.Fatal(err)
+	}
+	u.Query().Add("pubkey", pk)
 	r, err := http.Get(u.String())
 	if err != nil {
 		log.Fatal(err)
