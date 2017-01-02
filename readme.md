@@ -21,6 +21,10 @@ build client and obtain a nat address from a tuntun server already set up
 
     $ go get -u github.com/majestrate/tuntun/cmd/tuntun-client
     $ $GOPATH/bin/tuntun-client http://[some:mesh:net:ip]:port/
+    
+push your route over cjdns
+
+    # ip route add default dev tun0
 
 
 ## TODO
