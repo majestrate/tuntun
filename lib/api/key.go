@@ -42,8 +42,10 @@ func KeyToAddr(key string) net.IP {
 			nextbyte |= uint32(b) << bits
 			bits += 5
 			if bits >= 8 {
-				d[o_idx] = byte(nextbyte)
-				o_idx++
+				if o_idx < 32 {
+					d[o_idx] = byte(nextbyte)
+					o_idx++
+				}
 				bits -= 8
 				nextbyte >>= 8
 			}
