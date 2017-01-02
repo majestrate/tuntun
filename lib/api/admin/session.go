@@ -148,6 +148,16 @@ func (s *Session) Authed(obj map[string]interface{}) (response map[string]interf
 	return
 }
 
+func (s *Session) ConnectIPTunnel(pubkey string) (err error) {
+	_, err = s.Authed(map[string]interface{}{
+		"q": "IpTunnel_connectTo",
+		"args": map[string]interface{}{
+			"publicKeyOfNodeToConnectTo": pubkey,
+		},
+	})
+	return
+}
+
 func (s *Session) AddTunnelIfNotThere(pubkey string) (info *IPTunnel, err error) {
 	var infos []*IPTunnel
 	addrs := make(map[string]*IPTunnel)
