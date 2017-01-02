@@ -32,7 +32,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	u.Query().Add("pubkey", pk)
+	v := u.Query()
+	v.Add("pubkey", pk)
+	u.RawQuery = v.Encode()
 	r, err := http.Get(u.String())
 	if err != nil {
 		log.Fatal(err)
