@@ -15,11 +15,13 @@ var ErrBadAuth = errors.New("bad auth")
 var ErrBadResp = errors.New("bad response")
 var ErrBadRepl = errors.New("bad reply")
 var ErrBadAddr = errors.New("bad admin address")
+var ErrDuplicateAddress = errors.New("duplicate address")
 
 type Session struct {
-	a net.Addr
-	c net.PacketConn
-	p string
+	a    net.Addr
+	c    net.PacketConn
+	p    string
+	Addr util.AddressGenerator
 }
 
 func NewSession(addr string) (*Session, error) {
@@ -163,7 +165,7 @@ func (s *Session) AddTunnelIfNotThere(pubkey string) (info *IPTunnel, err error)
 	addrs := make(map[string]*IPTunnel)
 	infos, err = s.ListIPTunnels()
 	if err == nil {
-		for idx, _ := range infos {
+		for idx := range infos {
 			if infos[idx].Pubkey == pubkey {
 				info = infos[idx]
 			}
@@ -173,20 +175,36 @@ func (s *Session) AddTunnelIfNotThere(pubkey string) (info *IPTunnel, err error)
 			}
 		}
 		if info == nil {
-			// add it it's not there
-			for {
-				// make unique address
-				var n [3]byte
-				io.ReadFull(rand.Reader, n[:])
-				a := net.IPv4(10, n[0], n[1], n[2]).String()
-				_, ok := addrs[a]
-				if !ok {
-					info = &IPTunnel{
-						Address: a,
-						Pubkey:  pubkey,
+			if s.Addr == nil {
+				for {
+					// make unique address
+					var n [3]byte
+					io.ReadFull(rand.Reader, n[:])
+					a := net.IPv4(10, n[0], n[1], n[2]).String()
+					_, ok := addrs[a]
+					if !ok {
+						info = &IPTunnel{
+							Address: a,
+							Pubkey:  pubkey,
+						}
+						err = s.AddIPTunnel(info)
+						break
 					}
-					err = s.AddIPTunnel(info)
-					break
+				}
+			} else {
+				var ip net.IP
+				ip, err = s.Addr.GetIPFor(pubkey)
+				if err == nil {
+					a := ip.String()
+					_, ok := addrs[a]
+					if ok {
+						err = ErrDuplicateAddress
+					} else {
+						info = &IPTunnel{
+							Address: a,
+							Pubkey:  pubkey,
+						}
+					}
 				}
 			}
 		}

@@ -5,23 +5,25 @@ import (
 	"fmt"
 	"github.com/majestrate/tuntun/lib/api"
 	"github.com/majestrate/tuntun/lib/api/admin"
+	"github.com/majestrate/tuntun/lib/config"
 	"io"
 	"log"
 	"net"
 	"net/http"
 	"os"
-	"strconv"
 )
 
 func main() {
-	port := 1880
+	fname := "tuntun.ini"
 	if len(os.Args) > 1 {
-		p, e := strconv.Atoi(os.Args[1])
-		if e != nil {
-			log.Fatal(e)
-		}
-		port = p
+		fname = os.Args[1]
 	}
+	conf, err := config.Load(fname)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	adminfile := admin.DefaultAdminFile()
 	a, e := admin.GetAdminFromFile(adminfile)
 	if e != nil {
@@ -34,8 +36,10 @@ func main() {
 	pk, e := s.GetOurPubkey()
 	ip := api.KeyToAddr(pk)
 	s.Close()
+	gen := conf.Exit.AddressGenerator()
+	auth := conf.Auth.AuthPolicy()
 	if e == nil {
-		addr := fmt.Sprintf("[%s]:%d", ip.String(), port)
+		addr := fmt.Sprintf("[%s]:%d", ip.String(), conf.Port)
 		log.Printf("serving on http://%s/", addr)
 
 		handleNewRequest := func(w http.ResponseWriter, r *http.Request) {
@@ -46,14 +50,14 @@ func main() {
 				io.WriteString(w, "bad pubkey, "+pubkey)
 				return
 			}
-			log.Println(pubaddr.String())
 			addr, _, _ := net.SplitHostPort(r.RemoteAddr)
 			naddr := net.ParseIP(addr)
-			if naddr.Equal(pubaddr) {
+			if naddr.Equal(pubaddr) && auth.Allow(pubaddr) {
 				a, err := admin.GetAdminFromFile(adminfile)
 				if err == nil {
 					s, err := a.Session()
 					if err == nil {
+						s.Addr = gen
 						defer s.Close()
 						info, err := s.AddTunnelIfNotThere(pubkey)
 						if err == nil {
